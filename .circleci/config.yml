@@ -1,0 +1,118 @@
+version: 2.1
+
+executors:
+    myvm_bash:
+        docker:
+            - image: 139bercy/decp-rama
+        working_directory: /tmp
+
+    myvm_r:
+        docker:
+            - image: rocker/tidyverse
+        working_directory: /tmp
+
+jobs:
+    build:
+        executor: myvm_bash
+        steps:
+            - run:
+                # Récupération du code manuel car soucis avec "- checkout"
+                name: Récupération de decp-monitoring
+                command: |
+                    mkdir -p /tmp/workspace
+                    git clone https://github.com/$CIRCLE_PROJECT_USERNAME/decp-monitoring workspace/decp-monitoring
+                    cd workspace/decp-monitoring
+                    git checkout $CIRCLE_BRANCH
+            - restore_cache:
+                keys: cache-decp-files
+            - persist_to_workspace:
+                root: workspace
+                paths:
+                    - decp-monitoring
+    createdb:
+        executor: myvm_bash
+        steps:
+            - attach_workspace:
+                at: /tmp/workspace
+            - run:
+                name: Récupération et traitement des données
+                no_output_timeout: 10m
+                command: |
+                    cd /tmp/workspace/decp-monitoring/scripts/
+                    ./file2stats.sh
+            - save_cache:
+                key: cache-decp-files-{{ epoch }}
+                paths:
+                    - /tmp/workspace/decp-monitoring/scripts/output
+            - persist_to_workspace:
+                root: workspace
+                paths:
+                    - decp-monitoring
+
+    publish:
+        executor: myvm_r
+        steps:
+            - attach_workspace:
+                at: /tmp/workspace
+            - run:
+                name: Mise à jour de l'image docker
+                command: |
+                     apt update
+                     apt install ssh-client -y --no-install-recommends
+                     cd /tmp/workspace/decp-monitoring
+                     # R -e "install.packages('remotes')"
+                     R -e "remotes::install_deps(dependencies = TRUE)"
+            - run:
+                name: Construction du dataframe et du dashboard
+                command: |
+                     cd /tmp/workspace/decp-monitoring/scripts/
+                     Rscript createdf.R
+                     Rscript -e "rmarkdown::render('createboard.Rmd')"
+            - run:
+                name: Publication du tableau de bord sur la branche gh-pages
+                command: |
+                     cd /tmp/workspace/decp-monitoring/
+                     ./scripts/publish.sh
+
+workflows:
+    version: 2
+    dev:
+        jobs:
+            - build:
+                filters:
+                    branches:
+                        only:
+                            - develop
+                            - master
+            - createdb:
+                requires:
+                    - build
+                filters:
+                    branches:
+                        only:
+                            - develop
+                            - master
+            - publish:
+                requires:
+                    - createdb
+                filters:
+                    branches:
+                        only:
+                            - develop
+                            - master
+    daily:
+        jobs:
+            - build
+            - createdb:
+                requires:
+                    - build
+            - publish:
+                requires:
+                    - createdb
+        triggers:
+            - schedule:
+                cron: 0 7 * * 2,3,4,5,6
+                filters:
+                    branches:
+                        only:
+                            - master
