@@ -20,9 +20,17 @@ jobs:
                 name: Récupération de decp-monitoring
                 command: |
                     mkdir -p /tmp/workspace
-                    git clone https://github.com/$CIRCLE_PROJECT_USERNAME/decp-monitoring workspace/decp-monitoring
+                    git clone https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME workspace/decp-monitoring
                     cd workspace/decp-monitoring
-                    git checkout $CIRCLE_BRANCH
+                    if [[ -n "${CIRCLE_PR_NUMBER}" ]]
+                    then
+                        echo "Récupération de la PR"
+                        git pull origin pull/$CIRCLE_PR_NUMBER/head
+                    else
+                        echo "Récupération de la branche master"
+                        git checkout $CIRCLE_BRANCH
+                    fi
+
             - restore_cache:
                 keys: cache-decp-files
             - persist_to_workspace:
@@ -65,9 +73,12 @@ jobs:
             - run:
                 name: Construction du dataframe et du dashboard
                 command: |
-                     cd /tmp/workspace/decp-monitoring/scripts/
-                     Rscript createdf.R
-                     Rscript -e "rmarkdown::render('createboard.Rmd', output_file='index.html')"
+                     cd /tmp/workspace/decp-monitoring/
+                     #ls -al
+                     echo "Création du dataframe"
+                     Rscript ./scripts/createdf.R
+                     echo "Création du tableau de bord"
+                     Rscript -e "rmarkdown::render('./scripts/createboard.Rmd', output_file='index.html')"
 
     publish:
         executor: myvm_bash
@@ -85,28 +96,13 @@ workflows:
     version: 2
     dev:
         jobs:
-            - build:
-                filters:
-                    branches:
-                        only:
-                            - develop
-                            - master
+            - build
             - createdb:
                 requires:
                     - build
-                filters:
-                    branches:
-                        only:
-                            - develop
-                            - master
             - createboard:
                 requires:
                     - createdb
-                filters:
-                    branches:
-                        only:
-                            - develop
-                            - master
 
     daily:
         jobs:
