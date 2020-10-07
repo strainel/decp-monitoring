@@ -5,8 +5,8 @@ DIROUT=output
 FILEOUT=decp-stats.csv
 
 # Lecture des fichiers quotidens DECP sur data.gouv.fr
-echo "Lecture du datasets DECP sur data.gouv.fr"
-results=( $(curl -sS -X GET "https://www.data.gouv.fr/api/1/datasets/fichiers-consolides-des-donnees-essentielles-de-la-commande-publique/" -H "accept: application/json" | jq '.resources[]|select(.format == "json" and .type == "update")|.url') )
+echo "Lecture du datasets DECP sur data.gouv.fr"h
+results=( $(curl -sS -X GET "https://www.data.gouv.fr/api/1/datasets/donnees-essentielles-de-la-commande-publique-fichiers-consolides/" -H "accept: application/json" | jq '.resources[]|select(.format == "json" and .type == "update")|.url') )
 
 # Vérification du nombre de fichiers traités
 echo "Nb de fichiers sur data.gouv.fr : ${#results[@]}"
