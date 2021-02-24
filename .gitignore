@@ -1,3 +1,7 @@
+# MacOs
+*.icloud
+*.swp
+
 # RStudio
 .Rproj.user
 .Rhistory
@@ -6,6 +10,7 @@
 
 # Shiny
 createboard.html
+scripts/*.html
 
 # Data
 output/
