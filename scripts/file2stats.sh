@@ -14,6 +14,11 @@ echo "Nb de fichiers sur data.gouv.fr : ${#results[@]}"
 # Création du répertoire si absent
 [ ! -d ${DIROUT} ] && echo "Création du répertoire : ${DIROUT}" && mkdir ${DIROUT}
 
+# Clean_cache - mettre à jour la variable dans l'environnement circleci
+if [ ${CLEAN_CACHE} = "TRUE" ] ; then 
+  rm -fr ${DIROUT}/*
+fi
+
 # Suppression des anciens fichiers JQ pour faciliter la reprise sur incident
 echo "Suppresion des anciens fichiers pour recalculer les statistiques"
 find ${DIROUT} -mtime +100 -exec rm -f {} \;
