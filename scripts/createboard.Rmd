@@ -20,8 +20,9 @@ load(file = "output/stats.Rdata")
 labels <- c('aife_dume' = "Aife / DUME", 'dgfip_pes' = "DGFiP / PES marchés",
             'emarchespublics' = "e-MarchésPublics", 'grandlyon' = "Grand Lyon", 
             'marchespublicsinfo' = "MarchésPublics.info", 'atexomaximilien'="Atexo-Maximilien",
-            'ternumbfc' = "Ternum-BFC", 'megalisbretagne' = "Megalis-Bretagne")
-mycolors <- brewer.pal(n = length(labels), name = "Accent")
+            'ternumbfc' = "Ternum-BFC", 'megalisbretagne' = "Megalis-Bretagne",
+            'regionbretagne' = "CR Bretagne")
+mycolors <- brewer.pal(n = length(labels), name = "Paired")
 colors <- setNames(mycolors,names(labels))
 nbmarches_max_paran = 300000
 ```
