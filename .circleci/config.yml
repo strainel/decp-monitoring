@@ -1,132 +1,89 @@
+---
 version: 2.1
 
-executors:
-    myvm_bash:
-        docker:
-            - image: 139bercy/decp-rama
-        working_directory: /tmp
-
-    myvm_r:
-        docker:
-            - image: rocker/tidyverse
-        working_directory: /tmp
-
 jobs:
-    build:
-        executor: myvm_bash
-        steps:
-            - run:
-                # Récupération du code manuel car soucis avec "- checkout"
-                name: Récupération de decp-monitoring
-                command: |
-                    mkdir -p /tmp/workspace
-                    git clone https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME workspace/decp-monitoring
-                    git config --global user.email "stephane.trainel@gmail.com"
-                    git config --global user.name "Stéphane Trainel"
-                    cd workspace/decp-monitoring
-                    if [[ -n "${CIRCLE_PR_NUMBER}" ]]
-                    then
-                        echo "Récupération de la PR ${CIRCLE_PR_NUMBER}"
-                        git pull --no-commit origin pull/$CIRCLE_PR_NUMBER/head
-                    else
-                        echo "Récupération de la branche master"
-                        git checkout $CIRCLE_BRANCH
-                    fi
+  createdb:
+    docker:
+      - image: 139bercy/decp-rama
+    steps:
+      - checkout
+      - run:
+          name: Récupération et traitement des données
+          no_output_timeout: 10m
+          command: |
+              cd ./scripts/
+              ./file2stats.sh
+      - persist_to_workspace:
+          root: ./
+          paths:
+              - scripts/output
 
-            - restore_cache:
-                keys: cache-decp-files
-            - persist_to_workspace:
-                root: workspace
-                paths:
-                    - decp-monitoring
-    createdb:
-        executor: myvm_bash
-        steps:
-            - attach_workspace:
-                at: /tmp/workspace
-            - run:
-                name: Récupération et traitement des données
-                no_output_timeout: 10m
-                command: |
-                    cd /tmp/workspace/decp-monitoring/scripts/
-                    ./file2stats.sh
-            - save_cache:
-                key: cache-decp-files-{{ epoch }}
-                paths:
-                    - /tmp/workspace/decp-monitoring/scripts/output
-            - persist_to_workspace:
-                root: workspace
-                paths:
-                    - decp-monitoring
+  createboard:
+    docker:
+      - image: rocker/tidyverse
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ./
+      - run:
+          name: Mise à jour de l'image docker
+          command: |
+              apt update
+              apt install ssh-client libxt-dev -y --no-install-recommends
+              R -e "remotes::install_deps(dependencies = TRUE)"
+      - run:
+          name: Construction du dataframe et du dashboard
+          command: |
+              #ls -al
+              echo "Création du dataframe"
+              Rscript ./scripts/createdf.R
+              echo "Création du tableau de bord"
+              Rscript -e "rmarkdown::render('./scripts/createboard.Rmd', output_file='index.html')"
+              #ls -al .
+              ls -al scripts/
+      - persist_to_workspace:
+          root: ./
+          paths:
+            - scripts/index.html
+      - store_artifacts: # Accès au résultat pour validation si nécessaire
+          path: scripts/index.html
+          destination: index.html
 
-    createboard:
-        executor: myvm_r
-        steps:
-            - attach_workspace:
-                at: /tmp/workspace
-            - run:
-                name: Mise à jour de l'image docker
-                command: |
-                     apt update
-                     apt install ssh-client libxt-dev -y --no-install-recommends
-                     cd /tmp/workspace/decp-monitoring
-                     R -e "remotes::install_deps(dependencies = TRUE)"
-            - run:
-                name: Construction du dataframe et du dashboard
-                command: |
-                     cd /tmp/workspace/decp-monitoring/
-                     #ls -al
-                     echo "Création du dataframe"
-                     Rscript ./scripts/createdf.R
-                     echo "Création du tableau de bord"
-                     Rscript -e "rmarkdown::render('./scripts/createboard.Rmd', output_file='index.html')"
-                     #ls -al .
-                     ls -al scripts/
-            - persist_to_workspace:
-                root: workspace
-                paths:
-                    - decp-monitoring
-
-    publish:
-        executor: myvm_bash
-        steps:
-            - attach_workspace:
-                at: /tmp/workspace
-            - run:
-                name: Publication du tableau de bord sur la branche gh-pages
-                command: |
-                     cd /tmp/workspace/decp-monitoring/
-                     ./scripts/publish.sh
+  publish:
+    docker:
+      - image: rocker/tidyverse
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ./
+      - run:
+          name: Publication du tableau de bord sur la branche gh-pages
+          command: |
+              ./scripts/publish.sh
 
 
 workflows:
-    version: 2
+    version: 2.1
     dev:
-        jobs:
-            - build
-            - createdb:
-                requires:
-                    - build
-            - createboard:
-                requires:
-                    - createdb
+      jobs:
+        - createdb
+        - createboard:
+            requires:
+              - createdb
 
     daily:
-        jobs:
-            - build
-            - createdb:
-                requires:
-                    - build
-            - createboard:
-                requires:
-                    - createdb
-            - publish:
-                requires:
-                    - createboard
-        triggers:
-            - schedule:
-                cron: 0 7 * * 2,3,4,5,6
-                filters:
-                    branches:
-                        only:
-                            - master
+      jobs:
+        - createdb
+        - createboard:
+            requires:
+              - createdb
+        - publish:
+            requires:
+              - createboard
+      triggers:
+        - schedule:
+            cron: 0 7 * * 2,3,4,5,6
+            filters:
+              branches:
+                  only:
+                    - master
