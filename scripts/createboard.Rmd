@@ -1,6 +1,6 @@
 ---
 title: "Données essentielles de la commande publique"
-author: "MEFR"
+author: "@strainel"
 output: 
   flexdashboard::flex_dashboard:
     orientation: rows
@@ -147,14 +147,14 @@ gauge(sum(nbmarches$nb_365J), min = 0, max = 300000, symbol = '', gaugeSectors(
 #### Hébergement
 Ce tableau de bord est hébergé sur la plateforme GitHub.
 
-Il est administré par l'équipe *Bercy Hub* de la délégation au système d'information (DSI) des ministères économiques et financiers, en lien avec les équipes de la [délégation aux affaires juridiques (DAJ)](https://www.economie.gouv.fr/daj).
+Il est administré par l'auteur, ancien responsable de l'équipe *Bercy Hub* de la délégation au système d'information (DSI) des ministères économiques et financiers, en lien avec les équipes de la [délégation aux affaires juridiques (DAJ)](https://www.economie.gouv.fr/daj).
 
 
 #### Innovations ouvertes 
 
-Les demandes d'amélioration peuvent être soumises via une [*issue*](https://github.com/139bercy/decp-monitoring/issues).
+Les demandes d'amélioration peuvent être soumises via une [*issue*](https://github.com/strainel/decp-monitoring/issues).
 
-Les développeurs peuvent également proposer des évolutions via une [*pull request*](https://github.com/139bercy/decp-monitoring/pulls).
+Les développeurs peuvent également proposer des évolutions via une [*pull request*](https://github.com/strainel/decp-monitoring/pulls).
 
 
 ### Partenaires
