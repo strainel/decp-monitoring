@@ -18,7 +18,7 @@ case ${CIRCLE_BRANCH} in
     git config --global user.email ""
     git config --global user.name "circle-bot"
     #ssh-keygen -F github.com || ssh-keyscan github.com > ~/.ssh/known_hosts
-    git clone -b gh-pages https://${GITHUB_PAT}@github.com/139bercy/decp-monitoring gh-pages
+    git clone -b gh-pages https://${GITHUB_PAT}@github.com/strainel/decp-monitoring gh-pages
     cd gh-pages
     rm -fr *.html
     cp  ../scripts/index.html .
