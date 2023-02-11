@@ -20,7 +20,7 @@ case ${CIRCLE_BRANCH} in
     #ssh-keygen -F github.com || ssh-keyscan github.com > ~/.ssh/known_hosts
     git clone -b gh-pages https://${GITHUB_PAT}@github.com/strainel/decp-monitoring gh-pages
     cd gh-pages
-    rm -fr *.html
+    rm -fr index.html
     cp  ../scripts/index.html .
     git add index.html
     git commit -m "update build ${CIRCLE_BUILD_NUM} - [ci skip]"
